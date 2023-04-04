@@ -59,7 +59,7 @@ type Set[E any] interface {
 	// also known as disjunctive union, of the set and other.
 	SymmetricDifference(other Set[E]) Set[E]
 
-	// Len returns the size, also know as cardinality, of the set.
+	// Len returns the size, also known as cardinality, of the set.
 	Len() int
 	// Elems returns a list of the elements in the set.
 	Elems() []E
