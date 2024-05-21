@@ -7,10 +7,9 @@
 package sets
 
 import (
+	"cmp"
+	"slices"
 	"sort"
-
-	"golang.org/x/exp/constraints"
-	"golang.org/x/exp/slices"
 )
 
 // Sorted is a set whose elements are sorted.
@@ -32,9 +31,9 @@ type CmpFunc[E any] func(a, b E) int
 type EqFunc[E any] func(a, b E) bool
 
 // NewSorted returns a sorted set initialized with the given elements.
-func NewSorted[E constraints.Ordered](elems ...E) Sorted[E] {
+func NewSorted[E cmp.Ordered](elems ...E) Sorted[E] {
 	return &ordered[E]{
-		elems: stableSortUniqCmpEq(slices.Clone(elems), compare[E], equal[E]),
+		elems: stableSortUniqCmpEq(slices.Clone(elems), cmp.Compare[E], equal[E]),
 	}
 }
 
@@ -57,7 +56,7 @@ func NewSortedCmpEqFunc[E any](cmp CmpFunc[E], eq EqFunc[E], elems ...E) Sorted[
 	}
 }
 
-type ordered[E constraints.Ordered] struct {
+type ordered[E cmp.Ordered] struct {
 	elems []E
 }
 
@@ -510,7 +509,7 @@ type insert[E any] struct {
 
 // mergeUniqSortedLists merges B into A,
 // both of which must be sorted and contain unique values.
-func mergeUniqSortedLists[E constraints.Ordered](a, b []E) []E {
+func mergeUniqSortedLists[E cmp.Ordered](a, b []E) []E {
 	var inserts []insert[E]
 	ai, an := 0, len(a)
 	bi, bn := 0, len(b)
@@ -601,7 +600,7 @@ func insertInto[E any](a, tail []E, inserts []insert[E]) []E {
 
 // diffUniqSortedLists diffs B from A (e.g. A - B),
 // both of which must be sorted and contain unique values.
-func diffUniqSortedLists[E constraints.Ordered](a, b []E) []E {
+func diffUniqSortedLists[E cmp.Ordered](a, b []E) []E {
 	var deletes []int
 	ai, an := 0, len(a)
 	bi, bn := 0, len(b)
@@ -716,19 +715,19 @@ func stableSortUniqCmpEq[T any](list []T, cmp CmpFunc[T], eq EqFunc[T]) []T {
 }
 
 // stableSort stable sorts the list using O(n*log(n)) compares and O(n*log(n)*log(n)) swaps.
-func stableSort[E constraints.Ordered](list []E) []E {
-	slices.SortStableFunc(list, func(a, b E) bool { return a < b })
+func stableSort[E cmp.Ordered](list []E) []E {
+	slices.SortStableFunc(list, cmp.Compare[E])
 	return list
 }
 
 // stableSortCmp stable sorts the list using O(n*log(n)) compares and O(n*log(n)*log(n)) swaps.
 func stableSortCmp[T any](list []T, cmp CmpFunc[T]) []T {
-	slices.SortStableFunc(list, func(a, b T) bool { return cmp(a, b) < 0 })
+	slices.SortStableFunc(list, cmp)
 	return list
 }
 
 // uniq removes item duplicates in place and preserves order using O(n) compares.
-func uniq[E constraints.Ordered](list []E) []E {
+func uniq[E cmp.Ordered](list []E) []E {
 	n := len(slices.Compact(list))
 	zero(list[n:])
 	return list[:n]
@@ -783,16 +782,6 @@ func zero[T any](s []T) {
 	for i := range s {
 		s[i] = empty
 	}
-}
-
-func compare[T constraints.Ordered](a, b T) int {
-	if a < b {
-		return -1
-	}
-	if a == b {
-		return 0
-	}
-	return 1
 }
 
 func equal[T comparable](a, b T) bool { return a == b }

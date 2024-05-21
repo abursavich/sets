@@ -7,11 +7,12 @@
 package sets
 
 import (
+	"cmp"
+	"slices"
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/slices"
+	compare "github.com/google/go-cmp/cmp"
 )
 
 func runePtrsFrom(data string) func(idx ...int) []*rune {
@@ -80,8 +81,8 @@ func TestMergeSortedLists(t *testing.T) {
 		},
 	} {
 		t.Run(runePtrsString(tt.a), func(t *testing.T) {
-			got := mergeSortedLists(slices.Clone(tt.a), slices.Clone(tt.b), cmpRunePtrVal, equal[*rune])
-			if diff := cmp.Diff(got, tt.want); diff != "" {
+			got := mergeSortedLists(slices.Clone(tt.a), slices.Clone(tt.b), cmpPtrVal[rune], equal[*rune])
+			if diff := compare.Diff(got, tt.want); diff != "" {
 				t.Fatal("Unexpected diff: \n", diff)
 			}
 		})
@@ -112,7 +113,7 @@ func TestRunEq(t *testing.T) {
 		},
 	} {
 		t.Run(tt.elems, func(t *testing.T) {
-			if got := string(runEq([]rune(tt.elems), compare[rune])); got != tt.want {
+			if got := string(runEq([]rune(tt.elems), cmp.Compare[rune])); got != tt.want {
 				t.Errorf("runEq(%q): got: %q; want: %q", tt.elems, got, tt.want)
 			}
 		})
@@ -145,8 +146,8 @@ func TestStableSortUniq(t *testing.T) {
 	} {
 
 		t.Run(runePtrsString(tt.elems), func(t *testing.T) {
-			got := stableSortUniqCmpEq(slices.Clone(tt.elems), cmpRunePtrVal, equal[*rune])
-			if diff := cmp.Diff(got, tt.want); diff != "" {
+			got := stableSortUniqCmpEq(slices.Clone(tt.elems), cmpPtrVal[rune], equal[*rune])
+			if diff := compare.Diff(got, tt.want); diff != "" {
 				t.Fatal("Unexpected diff: \n", diff)
 			}
 		})

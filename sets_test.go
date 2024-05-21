@@ -7,17 +7,18 @@
 package sets
 
 import (
+	"cmp"
 	"math/rand"
 	"reflect"
+	"slices"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
-	"golang.org/x/exp/slices"
+	compare "github.com/google/go-cmp/cmp"
 )
 
-func cmpRunePtrVal(a, b *rune) int {
-	return compare(*a, *b)
+func cmpPtrVal[T cmp.Ordered](a, b *T) int {
+	return cmp.Compare(*a, *b)
 }
 
 func toRunePtrs(s string) []*rune {
@@ -38,7 +39,7 @@ func TestOrderedSets(t *testing.T) {
 		{
 			name:    "table",
 			newSet:  New[rune],
-			cmpFn:   compare[rune],
+			cmpFn:   cmp.Compare[rune],
 			eqFn:    equal[rune],
 			sorted:  false,
 			uniqCmp: true,
@@ -46,15 +47,15 @@ func TestOrderedSets(t *testing.T) {
 		{
 			name:    "ordered",
 			newSet:  func(elems ...rune) Set[rune] { return NewSorted(elems...) },
-			cmpFn:   compare[rune],
+			cmpFn:   cmp.Compare[rune],
 			eqFn:    equal[rune],
 			sorted:  true,
 			uniqCmp: true,
 		},
 		{
 			name:    "sorted",
-			newSet:  func(elems ...rune) Set[rune] { return NewSortedCmpFunc(compare[rune], elems...) },
-			cmpFn:   compare[rune],
+			newSet:  func(elems ...rune) Set[rune] { return NewSortedCmpFunc(cmp.Compare[rune], elems...) },
+			cmpFn:   cmp.Compare[rune],
 			eqFn:    equal[rune],
 			sorted:  true,
 			uniqCmp: true,
@@ -72,15 +73,15 @@ func TestUnorderedSets(t *testing.T) {
 		{
 			name:    "table",
 			newSet:  New[*rune],
-			cmpFn:   cmpRunePtrVal,
+			cmpFn:   cmpPtrVal[rune],
 			eqFn:    equal[*rune],
 			sorted:  false,
 			uniqCmp: true,
 		},
 		{
 			name:    "sorted",
-			newSet:  func(elems ...*rune) Set[*rune] { return NewSortedCmpEqFunc(cmpRunePtrVal, equal[*rune], elems...) },
-			cmpFn:   cmpRunePtrVal,
+			newSet:  func(elems ...*rune) Set[*rune] { return NewSortedCmpEqFunc(cmpPtrVal[rune], equal[*rune], elems...) },
+			cmpFn:   cmpPtrVal[rune],
 			eqFn:    equal[*rune],
 			sorted:  true,
 			uniqCmp: false,
@@ -104,7 +105,7 @@ type setType[E any] struct {
 }
 
 func (typ *setType[E]) sort(elems []E) []E {
-	slices.SortStableFunc(elems, func(a, b E) bool { return typ.cmpFn(a, b) < 0 })
+	slices.SortStableFunc(elems, typ.cmpFn)
 	return elems
 }
 
@@ -373,7 +374,7 @@ func (st *setTester[E]) testElems(t *testing.T, typ *setType[E]) {
 		got = typ.sort(got)
 	}
 	want := typ.sort(slices.Clone(st.elems))
-	if diff := cmp.Diff(got, want); diff != "" {
+	if diff := compare.Diff(got, want); diff != "" {
 		t.Fatal("Unexpected diff in set.Elems():\n", diff)
 	}
 }
@@ -417,7 +418,7 @@ func (st *setTester[E]) testClone(t *testing.T, typ *setType[E]) {
 
 	if typ.sorted {
 		got, want := clone.Elems(), set.Elems()
-		if diff := cmp.Diff(got, want); diff != "" {
+		if diff := compare.Diff(got, want); diff != "" {
 			t.Fatal("Unexpected sorting diff in clone.Elems():\n", diff)
 		}
 	}
